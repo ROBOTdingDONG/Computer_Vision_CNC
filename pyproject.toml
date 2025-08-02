@@ -1,0 +1,231 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cv-cnc-manufacturing"
+version = "1.0.0"
+description = "Computer Vision CNC Manufacturing Optimization Platform"
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Computer Vision CNC Platform Team", email = "team@cv-cnc-platform.com"}
+]
+maintainers = [
+    {name = "Computer Vision CNC Platform Team", email = "team@cv-cnc-platform.com"}
+]
+keywords = [
+    "computer-vision", "cnc", "manufacturing", "industry-4.0", 
+    "quality-control", "predictive-maintenance", "mtconnect", "opcua"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Manufacturing",
+    "Topic :: Scientific/Engineering :: Image Processing",
+    "Topic :: System :: Monitoring",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Operating System :: OS Independent",
+    "Environment :: Console",
+    "Environment :: Web Environment",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "torch>=1.13.0,<2.0.0",
+    "opencv-python>=4.7.0",
+    "fastapi>=0.85.0",
+    "pydantic>=1.10.0",
+    "numpy>=1.21.0,<2.0.0",
+    "sqlalchemy>=1.4.0,<2.0.0",
+    "opcua>=0.98.0",
+    "cryptography>=38.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.2.0",
+    "pytest-cov>=4.0.0",
+    "black>=22.10.0",
+    "isort>=5.11.0",
+    "flake8>=6.0.0",
+    "mypy>=0.991",
+    "pre-commit>=2.20.0",
+]
+test = [
+    "pytest>=7.2.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+    "pytest-asyncio>=0.20.0",
+    "pytest-benchmark>=4.0.0",
+]
+docs = [
+    "sphinx>=5.3.0",
+    "sphinx-rtd-theme>=1.1.0",
+    "myst-parser>=0.18.0",
+]
+security = [
+    "bandit[toml]>=1.7.4",
+    "safety>=2.3.0",
+    "semgrep>=0.122.0",
+]
+compliance = [
+    "asyncua>=0.9.0",
+    "pymodbus>=3.0.0",
+    "influxdb-client>=1.35.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/ROBOTdingDONG/Computer_Vision_CNC"
+Documentation = "https://cv-cnc-platform.readthedocs.io/"
+Repository = "https://github.com/ROBOTdingDONG/Computer_Vision_CNC.git"
+Issues = "https://github.com/ROBOTdingDONG/Computer_Vision_CNC/issues"
+Changelog = "https://github.com/ROBOTdingDONG/Computer_Vision_CNC/blob/main/CHANGELOG.md"
+
+[project.scripts]
+cv-cnc = "src.cli:main"
+cv-cnc-server = "src.api.server:main"
+cv-cnc-worker = "src.worker:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"cv_cnc_manufacturing" = ["py.typed", "*.pyi", "configs/*.yaml", "schemas/*.json"]
+
+[tool.black]
+line-length = 88
+target-version = ['py38', 'py39', 'py310']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 88
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+src_paths = ["src", "tests"]
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = [
+    "cv2.*",
+    "opcua.*",
+    "pymodbus.*",
+    "serial.*",
+    "torch.*",
+    "torchvision.*",
+    "tensorflow.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--cov=src",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml",
+    "--cov-fail-under=80",
+]
+testpaths = ["tests"]
+markers = [
+    "unit: Unit tests for individual components",
+    "integration: Integration tests for system components", 
+    "performance: Performance and latency tests",
+    "security: Security and compliance tests",
+    "manufacturing: Manufacturing-specific functionality tests",
+    "cnc_integration: CNC manufacturer integration tests",
+    "computer_vision: Computer vision algorithm tests",
+    "slow: Slow running tests (>5 seconds)",
+    "gpu: Tests requiring GPU hardware",
+    "hardware: Tests requiring specific hardware",
+]
+filterwarnings = [
+    "error",
+    "ignore::UserWarning",
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/migrations/*",
+    "*/__pycache__/*",
+    "*/venv/*",
+    "*/virtualenv/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+ignore_errors = true
+show_missing = true
+
+[tool.bandit]
+exclude_dirs = ["tests", "venv", "virtualenv"]
+tests = ["B201", "B301", "B302", "B303", "B304", "B305", "B306", "B307", "B308", "B309", "B310", "B311", "B312", "B313", "B314", "B315", "B316", "B317", "B318", "B319", "B320", "B321", "B322", "B323", "B324", "B325", "B401", "B402", "B403", "B404", "B405", "B406", "B407", "B408", "B409", "B410", "B411", "B412", "B413", "B501", "B502", "B503", "B504", "B505", "B506", "B507", "B601", "B602", "B603", "B604", "B605", "B606", "B607", "B608", "B609", "B610", "B611", "B701", "B702", "B703"]
+skips = ["B101", "B601"]
+
+[tool.bandit.assert_used]
+skips = ["*/tests/*"]
+
+[tool.pydocstyle]
+convention = "google"
+add-ignore = ["D100", "D104", "D213", "D203"]
+match-dir = "(?!tests).*"
+
+[tool.vulture]
+min_confidence = 60
+paths = ["src", "tests"]
+exclude = ["migrations/"]
+
+[tool.radon]
+exclude = "tests/*,migrations/*,venv/*"

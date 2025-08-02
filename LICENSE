@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2025 RoBoT_DinG_dONg
+Copyright (c) 2025 Computer Vision CNC Manufacturing Optimization Platform
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +19,53 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+INDUSTRIAL MANUFACTURING DISCLAIMER
+
+This software is designed for integration with industrial manufacturing 
+equipment and processes. The use of this software in production environments 
+involves inherent risks. Users are responsible for:
+
+1. SAFETY COMPLIANCE: Ensuring compliance with all applicable safety standards
+   including but not limited to OSHA, CE marking, and local safety regulations.
+
+2. INDUSTRIAL STANDARDS: Adherence to relevant manufacturing standards including
+   ISO 9001, IATF 16949, IEC 62443, MTConnect, and OPC-UA specifications.
+
+3. RISK ASSESSMENT: Conducting thorough risk assessments and implementing
+   appropriate safety measures before deployment in production environments.
+
+4. VALIDATION: Performing comprehensive testing and validation of all computer
+   vision algorithms and predictive maintenance systems before relying on them
+   for critical manufacturing decisions.
+
+5. HUMAN OVERSIGHT: Maintaining appropriate human oversight and fallback
+   procedures for all automated systems.
+
+The software is provided for evaluation and implementation purposes. Users
+assume full responsibility for the integration, testing, validation, and
+safe operation of this software in their manufacturing environments.
+
+NO WARRANTY FOR INDUSTRIAL USE: The authors and contributors specifically
+disclaim any warranties regarding the software's suitability for industrial
+manufacturing applications, including but not limited to warranties of
+safety, reliability, or fitness for any particular manufacturing purpose.
+
+LIMITATION OF LIABILITY: In no event shall the authors or contributors be
+liable for any industrial accidents, equipment damage, production losses,
+or any other manufacturing-related damages arising from the use of this
+software, even if advised of the possibility of such damages.
+
+EXPORT CONTROL NOTICE
+
+This software may be subject to export controls and regulations. Users are
+responsible for compliance with all applicable export control laws and
+regulations, including but not limited to the U.S. Export Administration
+Regulations (EAR) and the International Traffic in Arms Regulations (ITAR).
+
+The software contains computer vision and artificial intelligence technologies
+that may be considered dual-use technologies in some jurisdictions. Users
+must ensure compliance with all applicable regulations before exporting,
+re-exporting, or transferring this software or any derivatives thereof.

@@ -1,0 +1,96 @@
+# NOTICE
+
+This product includes software developed by the Computer Vision CNC Manufacturing Optimization Platform project.
+
+## Third-Party Dependencies
+
+This software incorporates components from various open-source projects. The following notices apply to the respective components:
+
+### Core Dependencies
+
+#### PyTorch
+Copyright (c) 2016-2023 Facebook, Inc (Adam Paszke)
+Copyright (c) 2014-2023 Facebook, Inc (Soumith Chintala)
+Licensed under BSD 3-Clause License
+
+#### OpenCV
+Copyright (c) 2000-2023, Intel Corporation, all rights reserved.
+Copyright (c) 2009-2011, Willow Garage Inc., all rights reserved.
+Copyright (c) 2009-2016, NVIDIA Corporation, all rights reserved.
+Copyright (c) 2010-2013, Advanced Micro Devices, Inc., all rights reserved.
+Copyright (c) 2015-2016, OpenCV Foundation, all rights reserved.
+Copyright (c) 2015-2016, Itseez Inc., all rights reserved.
+Licensed under Apache License 2.0
+
+#### TensorFlow
+Copyright 2015 The TensorFlow Authors
+Licensed under Apache License 2.0
+
+#### FastAPI
+Copyright (c) 2018 Sebastián Ramírez
+Licensed under MIT License
+
+### Manufacturing Integration Libraries
+
+#### MTConnect
+MTConnect Institute
+Licensed under MTConnect License
+
+#### OPC UA
+OPC Foundation
+Licensed under OPC Foundation License
+
+### Computer Vision Libraries
+
+#### Detectron2
+Copyright (c) Facebook, Inc. and its affiliates
+Licensed under Apache License 2.0
+
+#### MediaPipe
+Copyright 2019 The MediaPipe Authors
+Licensed under Apache License 2.0
+
+#### OpenVINO
+Copyright (C) 2018-2023 Intel Corporation
+Licensed under Apache License 2.0
+
+### Development and Testing Dependencies
+
+#### pytest
+Copyright (c) 2004-2023 Holger Krekel and others
+Licensed under MIT License
+
+#### Docker
+Copyright 2013-2023 Docker, Inc.
+Licensed under Apache License 2.0
+
+#### Kubernetes
+Copyright 2014 The Kubernetes Authors
+Licensed under Apache License 2.0
+
+### Security and Compliance
+
+#### Bandit
+Copyright (c) 2014 Hewlett-Packard Development Company, L.P.
+Licensed under Apache License 2.0
+
+#### cryptography
+Copyright (c) Individual contributors
+Licensed under Apache License 2.0 and BSD License
+
+## Industrial Standards and Specifications
+
+This software implements or interfaces with the following industrial standards:
+
+- **MTConnect Standard** (ANSI/MTC1.4-2018): Manufacturing Technology Connect
+- **OPC Unified Architecture** (IEC 62541): Industrial communication protocol
+- **ISA-95**: Enterprise-Control System Integration
+- **IEC 62443**: Industrial communication networks - Network and system security
+
+## Export Control
+
+This software may contain technology subject to export controls. Users are responsible for compliance with all applicable export regulations.
+
+## Manufacturing Safety
+
+This software is designed for industrial manufacturing environments. Users must ensure compliance with all applicable safety standards and regulations before deployment in production environments.

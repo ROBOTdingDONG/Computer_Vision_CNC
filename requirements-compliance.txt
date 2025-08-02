@@ -1,0 +1,74 @@
+# Manufacturing Compliance Dependencies
+# Specialized packages for industrial manufacturing standards compliance
+
+# IEC 62443 Industrial Cybersecurity
+cryptography>=38.0.0
+pycryptodome>=3.15.0
+paramiko>=2.12.0
+
+# Manufacturing Standards Libraries
+# Note: Many manufacturing protocol libraries are proprietary
+# These represent open-source alternatives and interfaces
+
+# MTConnect Protocol Support
+lxml>=4.9.0
+xmlschema>=2.1.0
+defusedxml>=0.7.1
+
+# OPC-UA Enhanced Support
+asyncua>=0.9.0  # Alternative OPC-UA library
+opcua-widgets>=0.6.0
+
+# Industrial Communication
+pymodbus>=3.0.0  # Modbus TCP/RTU
+canopen>=2.2.0  # CANopen protocol
+snap7>=1.3  # Siemens S7 PLC communication
+
+# Time Series for Manufacturing Data
+influxdb-client>=1.35.0
+questdb>=1.0.0  # Fast time-series database
+
+# Quality Management System Integration
+# Custom packages for ISO 9001, IATF 16949 compliance tracking
+
+# Manufacturing Analytics
+plotly>=5.11.0
+dash>=2.7.0  # Manufacturing dashboards
+
+# Industrial IoT
+paho-mqtt>=1.6.0  # MQTT for IoT devices
+bluepy>=1.3.0  # Bluetooth Low Energy
+
+# Edge Computing Support
+onnxruntime>=1.12.0  # Edge inference
+openvino>=2022.3.0  # Intel edge optimization
+tensorrt>=8.5.0  # NVIDIA edge optimization (if available)
+
+# Manufacturing Simulation & Testing
+simpy>=4.0.1  # Discrete event simulation
+mesa>=1.1.0  # Agent-based manufacturing simulation
+
+# Compliance Documentation
+reportlab>=3.6.0
+weasyprint>=57.0
+jinja2>=3.1.0
+
+# Export Control Compliance
+# Tools for tracking dual-use technology compliance
+requests>=2.28.0  # For compliance API integration
+
+# Audit Trail & Logging
+python-json-logger>=2.0.0
+structlog>=22.3.0
+
+# Digital Signatures for Compliance
+ecdsa>=0.18.0
+python-gnupg>=0.5.0
+
+# Manufacturing Data Validation
+cerberus>=1.3.4  # Schema validation
+jsonschema>=4.17.0
+
+# Plant Floor Integration
+pywin32>=305; sys_platform == "win32"  # Windows industrial integration
+RPi.GPIO>=0.7.1; platform_machine == "armv7l"  # Raspberry Pi GPIO
