@@ -183,21 +183,135 @@ def _validate_environment() -> None:
 
 # Module imports for easy access
 try:
-    from .core import *
-    from .computer_vision import *
-    from .cnc_integration import *
-    from .quality_control import *
-    from .predictive_maintenance import *
-    from .api import *
-    from .security import *
-    from .compliance import *
-    from .utils import *
+    # Import core base classes and exceptions
+    from .core.base import (
+        BaseManufacturingComponent,
+        BaseAsyncComponent,
+        OperationResult,
+        ComponentState,
+        ManufacturingException,
+        SafetyException,
+        QualityException,
+        safety_context
+    )
+    
+    # Import computer vision components
+    from .computer_vision import (
+        ImageProcessor,
+        DefectDetector,
+        QualityInspector,
+        InspectionResult,
+        DefectDetection,
+        DefectType,
+        QualityMetrics
+    )
+    
+    # Import CNC integration components
+    from .cnc import (
+        CNCManager,
+        CNCController,
+        MTConnectController,
+        OPCUAController,
+        MachineState,
+        MachineStatus,
+        ToolStatus,
+        AxisPosition
+    )
+    
+    # Import API components
+    from .api import (
+        ManufacturingAPI,
+        create_api_server,
+        run_api_server,
+        APIConfig
+    )
+    
+    # Import development environment tools
+    from .development import (
+        DevelopmentEnvironment,
+        validate_dev_environment,
+        setup_development_environment,
+        create_vscode_config
+    )
     
     logger.debug("All platform modules imported successfully")
+    
+    # Only add successfully imported components to __all__
+    # Core components that we know exist
+    __all__ += [
+        "BaseManufacturingComponent",
+        "BaseAsyncComponent", 
+        "OperationResult",
+        "ComponentState",
+        "ManufacturingException",
+        "SafetyException",
+        "QualityException",
+        "safety_context",
+    ]
+    
+    # Conditionally add components that were successfully imported
+    try:
+        if 'QualityInspector' in globals():
+            __all__ += [
+                "QualityInspector",
+                "DefectDetector",
+                "ImageProcessor", 
+                "InspectionResult",
+                "DefectDetection",
+                "DefectType"
+            ]
+    except: pass
+    
+    try:
+        if 'CNCManager' in globals():
+            __all__ += [
+                "CNCManager",
+                "CNCController",
+                "MTConnectController",
+                "OPCUAController",
+                "MachineState", 
+                "MachineStatus",
+                "AxisPosition"
+            ]
+    except: pass
+    
+    try:
+        if 'ManufacturingAPI' in globals():
+            __all__ += [
+                "ManufacturingAPI",
+                "create_api_server",
+                "run_api_server",
+                "APIConfig"
+            ]
+    except: pass
+    
+    try:
+        if 'DevelopmentEnvironment' in globals():
+            __all__ += [
+                "DevelopmentEnvironment",
+                "validate_dev_environment",
+                "setup_development_environment"
+            ]
+    except: pass
     
 except ImportError as e:
     logger.warning(f"Some platform modules could not be imported: {e}")
     logger.info("This is normal during initial setup or testing")
+    logger.debug(f"Import error details: {str(e)}")
+
+# Update platform metadata to reflect architecture completion
+__manufacturing_metadata__ = {
+    "architecture_complete": True,  # Tasks 8-10 completed
+    "core_base_classes": True,
+    "computer_vision_framework": True,
+    "cnc_integration": True,
+    "api_server": True,
+    "development_environment": True,
+    "safety_certified": False,  # Requires validation
+    "compliance_validated": False,  # Requires validation
+    "export_approved": False,  # Requires validation
+    "production_ready": False  # Requires full validation
+}
 
 # Platform metadata for setuptools
 __all__ = [
@@ -236,5 +350,8 @@ __all__ = [
     "EXPORT_CONTROL_NOTICE",
     
     # Logger
-    "logger"
+    "logger",
+    
+    # Manufacturing metadata
+    "__manufacturing_metadata__"
 ]
