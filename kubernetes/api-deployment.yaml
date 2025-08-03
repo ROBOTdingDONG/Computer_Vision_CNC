@@ -1,0 +1,164 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cv-cnc-api
+  namespace: cv-cnc-manufacturing
+  labels:
+    app.kubernetes.io/name: cv-cnc-manufacturing
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: cv-cnc-platform
+    app.kubernetes.io/version: "1.0.0"
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cv-cnc-manufacturing
+      app.kubernetes.io/component: api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cv-cnc-manufacturing
+        app.kubernetes.io/component: api
+        app.kubernetes.io/part-of: cv-cnc-platform
+    spec:
+      serviceAccountName: cv-cnc-service-account
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: cv-cnc-api
+        image: cv-cnc-manufacturing/cv-cnc-api:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+          protocol: TCP
+        env:
+        - name: CV_CNC_ENV
+          value: "production"
+        - name: CV_CNC_LOG_LEVEL
+          value: "INFO"
+        - name: CV_CNC_API_HOST
+          value: "0.0.0.0"
+        - name: CV_CNC_API_PORT
+          value: "8000"
+        - name: CV_CNC_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cv-cnc-app-secrets
+              key: secret-key
+        - name: CV_CNC_DATABASE_URL
+          value: "postgresql://cvuser:$(POSTGRES_PASSWORD)@cv-cnc-postgres:5432/cv_cnc_manufacturing"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cv-cnc-app-secrets
+              key: database-password
+        - name: CV_CNC_REDIS_URL
+          value: "redis://:$(REDIS_PASSWORD)@cv-cnc-redis:6379/0"
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cv-cnc-app-secrets
+              key: redis-password
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: data-volume
+          mountPath: /app/data
+        - name: logs-volume
+          mountPath: /app/logs
+        - name: config-volume
+          mountPath: /app/configs
+          readOnly: true
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: cv-cnc-data-pvc
+      - name: logs-volume
+        persistentVolumeClaim:
+          claimName: cv-cnc-logs-pvc
+      - name: config-volume
+        configMap:
+          name: cv-cnc-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cv-cnc-api-service
+  namespace: cv-cnc-manufacturing
+  labels:
+    app.kubernetes.io/name: cv-cnc-manufacturing
+    app.kubernetes.io/component: api
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: http
+    protocol: TCP
+    name: http
+  selector:
+    app.kubernetes.io/name: cv-cnc-manufacturing
+    app.kubernetes.io/component: api
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cv-cnc-service-account
+  namespace: cv-cnc-manufacturing
+  labels:
+    app.kubernetes.io/name: cv-cnc-manufacturing
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: cv-cnc-manufacturing
+  name: cv-cnc-role
+rules:
+- apiGroups: [""]
+  resources: ["configmaps", "secrets"]
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cv-cnc-role-binding
+  namespace: cv-cnc-manufacturing
+subjects:
+- kind: ServiceAccount
+  name: cv-cnc-service-account
+  namespace: cv-cnc-manufacturing
+roleRef:
+  kind: Role
+  name: cv-cnc-role
+  apiGroup: rbac.authorization.k8s.io

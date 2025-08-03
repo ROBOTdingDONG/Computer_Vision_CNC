@@ -1,0 +1,117 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cv-cnc-ingress
+  namespace: cv-cnc-manufacturing
+  labels:
+    app.kubernetes.io/name: cv-cnc-manufacturing
+    app.kubernetes.io/component: ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - cv-cnc-api.your-domain.com
+    - cv-cnc-vision.your-domain.com
+    - cv-cnc-monitoring.your-domain.com
+    secretName: cv-cnc-tls-secret
+  rules:
+  - host: cv-cnc-api.your-domain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: cv-cnc-api-service
+            port:
+              number: 80
+  - host: cv-cnc-vision.your-domain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: cv-cnc-vision-service
+            port:
+              number: 80
+  - host: cv-cnc-monitoring.your-domain.com
+    http:
+      paths:
+      - path: /grafana
+        pathType: Prefix
+        backend:
+          service:
+            name: cv-cnc-monitoring-grafana
+            port:
+              number: 80
+      - path: /prometheus
+        pathType: Prefix
+        backend:
+          service:
+            name: cv-cnc-monitoring-prometheus
+            port:
+              number: 9090
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cv-cnc-network-policy
+  namespace: cv-cnc-manufacturing
+  labels:
+    app.kubernetes.io/name: cv-cnc-manufacturing
+    app.kubernetes.io/component: security
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: cv-cnc-manufacturing
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: nginx-ingress
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: cv-cnc-manufacturing
+    ports:
+    - protocol: TCP
+      port: 8000
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: cv-cnc-manufacturing
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 5432  # PostgreSQL
+    - protocol: TCP
+      port: 6379  # Redis

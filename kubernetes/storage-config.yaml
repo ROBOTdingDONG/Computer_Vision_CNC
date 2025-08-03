@@ -1,0 +1,120 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cv-cnc-data-pvc
+  namespace: cv-cnc-manufacturing
+  labels:
+    app.kubernetes.io/name: cv-cnc-manufacturing
+    app.kubernetes.io/component: storage
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: nfs-storage
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cv-cnc-logs-pvc
+  namespace: cv-cnc-manufacturing
+  labels:
+    app.kubernetes.io/name: cv-cnc-manufacturing
+    app.kubernetes.io/component: storage
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: nfs-storage
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cv-cnc-models-pvc
+  namespace: cv-cnc-manufacturing
+  labels:
+    app.kubernetes.io/name: cv-cnc-manufacturing
+    app.kubernetes.io/component: storage
+spec:
+  accessModes:
+    - ReadOnlyMany
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: nfs-storage
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cv-cnc-config
+  namespace: cv-cnc-manufacturing
+  labels:
+    app.kubernetes.io/name: cv-cnc-manufacturing
+    app.kubernetes.io/component: config
+data:
+  # Manufacturing Configuration
+  mtconnect-host: "cnc-machine-1.factory.local"
+  mtconnect-port: "5000"
+  opcua-endpoint: "opc.tcp://cnc-machine-1.factory.local:4840"
+  
+  # Computer Vision Configuration
+  max-image-size: "2048x2048"
+  defect-threshold: "0.8"
+  quality-threshold: "0.95"
+  batch-size: "4"
+  
+  # API Configuration
+  api-workers: "4"
+  api-timeout: "120"
+  
+  # Monitoring Configuration
+  prometheus-endpoint: "http://cv-cnc-monitoring-prometheus:9090"
+  grafana-endpoint: "http://cv-cnc-monitoring-grafana:3000"
+  
+  # Application Configuration
+  app.yaml: |
+    manufacturing:
+      safety_mode: true
+      emergency_stop_enabled: true
+      quality_control:
+        enabled: true
+        auto_reject: true
+        threshold: 0.95
+      
+    computer_vision:
+      models:
+        defect_detection: "yolov8_defect_v1.0"
+        quality_inspection: "resnet_quality_v1.0"
+      preprocessing:
+        resize: [640, 640]
+        normalize: true
+        augmentation: false
+      
+    cnc:
+      protocols:
+        mtconnect:
+          enabled: true
+          polling_interval: 1000
+        opcua:
+          enabled: true
+          security_policy: "Basic256Sha256"
+      
+    api:
+      cors:
+        enabled: true
+        origins: ["*"]
+      rate_limiting:
+        enabled: true
+        requests_per_minute: 100
+      
+    monitoring:
+      metrics:
+        enabled: true
+        interval: 30
+      logging:
+        level: "INFO"
+        format: "json"
+        retention_days: 30

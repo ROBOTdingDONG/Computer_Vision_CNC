@@ -1,0 +1,205 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: cv-cnc-manufacturing
+  labels:
+    app.kubernetes.io/name: cv-cnc-manufacturing
+    app.kubernetes.io/component: monitoring
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+      external_labels:
+        cluster: 'cv-cnc-manufacturing'
+        environment: 'production'
+
+    rule_files:
+      - "/etc/prometheus/rules/*.yml"
+
+    scrape_configs:
+      # Kubernetes API Server
+      - job_name: 'kubernetes-apiservers'
+        kubernetes_sd_configs:
+        - role: endpoints
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: default;kubernetes;https
+
+      # Kubernetes Nodes
+      - job_name: 'kubernetes-nodes'
+        kubernetes_sd_configs:
+        - role: node
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+
+      # CV-CNC Application Metrics
+      - job_name: 'cv-cnc-api'
+        kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names:
+            - cv-cnc-manufacturing
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name]
+          action: keep
+          regex: cv-cnc-api-service
+        - source_labels: [__meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: http
+
+      # CV-CNC Vision Service
+      - job_name: 'cv-cnc-vision'
+        kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names:
+            - cv-cnc-manufacturing
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name]
+          action: keep
+          regex: cv-cnc-vision-service
+
+      # CV-CNC Controller Service
+      - job_name: 'cv-cnc-controller'
+        kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names:
+            - cv-cnc-manufacturing
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name]
+          action: keep
+          regex: cv-cnc-controller-service
+
+      # PostgreSQL Metrics
+      - job_name: 'postgresql'
+        static_configs:
+        - targets: ['cv-cnc-postgres:9187']
+
+      # Redis Metrics
+      - job_name: 'redis'
+        static_configs:
+        - targets: ['cv-cnc-redis:9121']
+
+      # Node Exporter
+      - job_name: 'node-exporter'
+        kubernetes_sd_configs:
+        - role: endpoints
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_endpoints_name]
+          action: keep
+          regex: node-exporter
+
+  manufacturing_rules.yml: |
+    groups:
+    - name: cv-cnc-manufacturing
+      rules:
+      # Quality Control Metrics
+      - record: cv_cnc:defect_rate
+        expr: rate(cv_cnc_defects_detected_total[5m]) / rate(cv_cnc_inspections_total[5m]) * 100
+
+      - record: cv_cnc:quality_score_avg
+        expr: avg_over_time(cv_cnc_quality_score[5m])
+
+      # Production Metrics
+      - record: cv_cnc:production_rate
+        expr: rate(cv_cnc_parts_processed_total[5m]) * 60
+
+      - record: cv_cnc:machine_utilization
+        expr: avg(cv_cnc_machine_active_time / cv_cnc_machine_total_time) * 100
+
+      # Performance Metrics
+      - record: cv_cnc:api_response_time_p95
+        expr: histogram_quantile(0.95, rate(cv_cnc_api_request_duration_seconds_bucket[5m]))
+
+      - record: cv_cnc:vision_processing_time_p95
+        expr: histogram_quantile(0.95, rate(cv_cnc_vision_processing_duration_seconds_bucket[5m]))
+
+  alerts.yml: |
+    groups:
+    - name: cv-cnc-alerts
+      rules:
+      # Critical Alerts
+      - alert: HighDefectRate
+        expr: cv_cnc:defect_rate > 5
+        for: 2m
+        labels:
+          severity: critical
+          component: quality-control
+        annotations:
+          summary: "High defect rate detected"
+          description: "Defect rate is {{ $value }}% which is above the 5% threshold"
+
+      - alert: MachineDown
+        expr: cv_cnc_machine_status == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: cnc-machine
+        annotations:
+          summary: "CNC machine is down"
+          description: "Machine {{ $labels.machine_id }} has been down for more than 1 minute"
+
+      - alert: QualityScoreLow
+        expr: cv_cnc:quality_score_avg < 0.9
+        for: 5m
+        labels:
+          severity: warning
+          component: quality-control
+        annotations:
+          summary: "Quality score is below threshold"
+          description: "Average quality score is {{ $value }} which is below 0.9"
+
+      # Performance Alerts
+      - alert: HighAPILatency
+        expr: cv_cnc:api_response_time_p95 > 2
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "High API latency detected"
+          description: "95th percentile response time is {{ $value }}s"
+
+      - alert: VisionProcessingDelay
+        expr: cv_cnc:vision_processing_time_p95 > 10
+        for: 3m
+        labels:
+          severity: warning
+          component: computer-vision
+        annotations:
+          summary: "Vision processing delays detected"
+          description: "95th percentile processing time is {{ $value }}s"
+
+      # Resource Alerts
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value }}%"
+
+      - alert: HighCPUUsage
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value }}%"

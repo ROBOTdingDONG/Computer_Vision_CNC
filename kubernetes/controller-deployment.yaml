@@ -1,0 +1,122 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cv-cnc-controller
+  namespace: cv-cnc-manufacturing
+  labels:
+    app.kubernetes.io/name: cv-cnc-manufacturing
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/part-of: cv-cnc-platform
+    app.kubernetes.io/version: "1.0.0"
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cv-cnc-manufacturing
+      app.kubernetes.io/component: controller
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cv-cnc-manufacturing
+        app.kubernetes.io/component: controller
+        app.kubernetes.io/part-of: cv-cnc-platform
+    spec:
+      serviceAccountName: cv-cnc-service-account
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      hostNetwork: true  # May be needed for industrial network access
+      containers:
+      - name: cv-cnc-controller
+        image: cv-cnc-manufacturing/cv-cnc-api:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+          protocol: TCP
+        env:
+        - name: CV_CNC_ENV
+          value: "production"
+        - name: CV_CNC_SERVICE_TYPE
+          value: "cnc_controller"
+        - name: CV_CNC_MTCONNECT_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: cv-cnc-config
+              key: mtconnect-host
+        - name: CV_CNC_OPCUA_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              name: cv-cnc-config
+              key: opcua-endpoint
+        - name: CV_CNC_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cv-cnc-app-secrets
+              key: secret-key
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: data-volume
+          mountPath: /app/data
+        - name: logs-volume
+          mountPath: /app/logs
+        - name: certs-volume
+          mountPath: /app/certs
+          readOnly: true
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: cv-cnc-data-pvc
+      - name: logs-volume
+        persistentVolumeClaim:
+          claimName: cv-cnc-logs-pvc
+      - name: certs-volume
+        secret:
+          secretName: cv-cnc-tls-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cv-cnc-controller-service
+  namespace: cv-cnc-manufacturing
+  labels:
+    app.kubernetes.io/name: cv-cnc-manufacturing
+    app.kubernetes.io/component: controller
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: http
+    protocol: TCP
+    name: http
+  selector:
+    app.kubernetes.io/name: cv-cnc-manufacturing
+    app.kubernetes.io/component: controller
