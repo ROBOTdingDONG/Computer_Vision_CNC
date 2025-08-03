@@ -1,0 +1,175 @@
+# Computer Vision CNC Manufacturing Platform - Simple Testing Environment
+# Infrastructure services only for initial testing
+
+version: '3.8'
+
+networks:
+  cv-cnc-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+
+services:
+  # PostgreSQL Database
+  cv-cnc-postgres:
+    image: postgres:15-alpine
+    container_name: cv-cnc-postgres
+    environment:
+      POSTGRES_DB: cv_cnc_manufacturing_test
+      POSTGRES_USER: testuser
+      POSTGRES_PASSWORD: testpass123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - cv-cnc-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U testuser -d cv_cnc_manufacturing_test"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  cv-cnc-redis:
+    image: redis:7-alpine
+    container_name: cv-cnc-redis
+    command: redis-server --requirepass testredis123
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - cv-cnc-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Mock CNC Machine (for testing)
+  cv-cnc-mock-cnc:
+    image: python:3.11-slim
+    container_name: cv-cnc-mock-cnc
+    command: >
+      sh -c "
+        pip install flask &&
+        python -c \"
+        import time
+        from threading import Thread
+        from flask import Flask, jsonify
+        
+        app = Flask(__name__)
+        
+        @app.route('/current')
+        def current():
+            return '''<?xml version=\\\"1.0\\\" encoding=\\\"UTF-8\\\"?>
+            <MTConnectStreams>
+              <Header creationTime=\\\"2025-08-02T12:00:00Z\\\" />
+              <Streams>
+                <DeviceStream name=\\\"CNC-001\\\" uuid=\\\"000\\\">
+                  <ComponentStream component=\\\"Controller\\\">
+                    <Events>
+                      <Execution dataItemId=\\\"exec\\\" timestamp=\\\"2025-08-02T12:00:00Z\\\">ACTIVE</Execution>
+                    </Events>
+                    <Samples>
+                      <SpindleSpeed dataItemId=\\\"spindle\\\" timestamp=\\\"2025-08-02T12:00:00Z\\\">1500</SpindleSpeed>
+                    </Samples>
+                  </ComponentStream>
+                </DeviceStream>
+              </Streams>
+            </MTConnectStreams>'''
+        
+        @app.route('/health')
+        def health():
+            return {'status': 'healthy', 'timestamp': '2025-08-02T23:00:00Z'}
+            
+        def run_server():
+            app.run(host='0.0.0.0', port=5000, debug=True)
+            
+        Thread(target=run_server, daemon=True).start()
+        
+        # Keep container running
+        while True:
+            time.sleep(60)
+        \"
+      "
+    ports:
+      - "5000:5000"
+    networks:
+      - cv-cnc-network
+
+  # Simple API Test Service (Python with minimal dependencies)
+  cv-cnc-api-simple:
+    image: python:3.11-slim
+    container_name: cv-cnc-api-simple
+    command: >
+      sh -c "
+        pip install fastapi uvicorn psycopg2-binary redis &&
+        python -c \"
+        import uvicorn
+        from fastapi import FastAPI
+        from datetime import datetime
+        import psycopg2
+        import redis
+        import os
+        
+        app = FastAPI(title='CV CNC Manufacturing Platform - Test', version='1.0.0')
+        
+        @app.get('/')
+        def root():
+            return {
+                'message': 'Computer Vision CNC Manufacturing Platform - Test Mode',
+                'version': '1.0.0',
+                'status': 'running',
+                'timestamp': datetime.now().isoformat()
+            }
+        
+        @app.get('/health')
+        def health():
+            health_status = {'status': 'healthy', 'checks': {}}
+            
+            # Check database
+            try:
+                conn = psycopg2.connect('postgresql://testuser:testpass123@cv-cnc-postgres:5432/cv_cnc_manufacturing_test')
+                conn.close()
+                health_status['checks']['database'] = 'healthy'
+            except Exception as e:
+                health_status['checks']['database'] = f'unhealthy: {str(e)}'
+                health_status['status'] = 'unhealthy'
+            
+            # Check Redis
+            try:
+                r = redis.Redis(host='cv-cnc-redis', port=6379, password='testredis123', decode_responses=True)
+                r.ping()
+                health_status['checks']['redis'] = 'healthy'
+            except Exception as e:
+                health_status['checks']['redis'] = f'unhealthy: {str(e)}'
+                health_status['status'] = 'unhealthy'
+            
+            return health_status
+        
+        @app.get('/api/manufacturing/status')
+        def manufacturing_status():
+            return {
+                'cnc_machines': {'connected': 1, 'active': 1, 'total': 1},
+                'computer_vision': {'status': 'ready', 'gpu_enabled': False, 'models_loaded': 2},
+                'quality_control': {'status': 'active', 'defect_detection': 'enabled'},
+                'production': {'mode': 'test', 'safety_enabled': False}
+            }
+        
+        uvicorn.run(app, host='0.0.0.0', port=8000)
+        \"
+      "
+    ports:
+      - "8000:8000"
+    networks:
+      - cv-cnc-network
+    depends_on:
+      cv-cnc-postgres:
+        condition: service_healthy
+      cv-cnc-redis:
+        condition: service_healthy
+    restart: unless-stopped
