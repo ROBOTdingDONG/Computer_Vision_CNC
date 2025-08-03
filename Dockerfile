@@ -374,6 +374,52 @@ EXPOSE 8080
 CMD ["python3", "-m", "http.server", "8080", "--directory", "docs/build/html"]
 
 # =============================================================================
+# Minimal Stage - Lightweight image with core functionality only
+# =============================================================================
+FROM base as minimal
+
+# Create application user
+RUN groupadd -r cvcnc && useradd -r -g cvcnc cvcnc
+
+# Set working directory
+WORKDIR /app
+
+# Install minimal Python dependencies only
+COPY requirements-minimal.txt /tmp/
+RUN python3 -m pip install --no-cache-dir -r /tmp/requirements-minimal.txt && \
+    rm /tmp/requirements-minimal.txt
+
+# Copy only essential application code
+COPY src/cv_cnc_manufacturing/api/ /app/src/cv_cnc_manufacturing/api/
+COPY src/cv_cnc_manufacturing/core/ /app/src/cv_cnc_manufacturing/core/
+COPY src/cv_cnc_manufacturing/__init__.py /app/src/cv_cnc_manufacturing/
+COPY main.py /app/
+
+# Set Python path
+ENV PYTHONPATH=/app/src:$PYTHONPATH
+
+# Set minimal environment
+ENV ENVIRONMENT=minimal \
+    LOG_LEVEL=INFO \
+    WORKERS=1
+
+# Change ownership to application user
+RUN chown -R cvcnc:cvcnc /app
+
+# Switch to non-root user
+USER cvcnc
+
+# Minimal health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=2 \
+    CMD python3 -c "import requests; requests.get('http://localhost:8000/health')" || exit 1
+
+# Expose only essential port
+EXPOSE 8000
+
+# Minimal startup command
+CMD ["python3", "main.py"]
+
+# =============================================================================
 # Build Arguments and Multi-Architecture Support
 # =============================================================================
 
