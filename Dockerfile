@@ -137,8 +137,7 @@ ENV ENVIRONMENT=production \
     PATH=/usr/local/bin:$PATH
 
 # Security hardening
-RUN # Remove unnecessary packages
-    apt-get autoremove -y && \
+RUN apt-get autoremove -y && \
     # Secure file permissions
     chmod 750 /app && \
     # Remove shell history and temporary files
